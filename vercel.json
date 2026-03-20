@@ -5,24 +5,22 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "frontend/dist",
-        "framework": "vite"
+        "distDir": "frontend/dist"
       }
     },
     {
-      "src": "backend/manage.py",
-      "use": "@vercel/python",
-      "config": { "maxLambdaSize": "15mb" }
+      "src": "backend/app.py",
+      "use": "@vercel/python"
     }
   ],
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/"
+      "dest": "backend/app.py"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/"
+      "dest": "frontend/dist/$1"
     }
   ]
 }
