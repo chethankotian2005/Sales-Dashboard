@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "frontend/dist",
+        "framework": "vite"
+      }
+    },
+    {
+      "src": "backend/manage.py",
+      "use": "@vercel/python",
+      "config": { "maxLambdaSize": "15mb" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/"
+    }
+  ]
+}
