@@ -84,14 +84,21 @@ export default function AIInsightsCard() {
     controllerRef.current = controller
 
     try {
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const isNvidiaKey = apiKey.startsWith('nvapi-')
+      const endpoint = isNvidiaKey
+        ? 'https://integrate.api.nvidia.com/v1/chat/completions'
+        : 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
+      const model = isNvidiaKey ? 'qwen/qwen3.5-122b-a10b' : 'qwen-plus'
+
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
+          ...(isNvidiaKey ? { Accept: 'text/event-stream' } : {}),
         },
         body: JSON.stringify({
-          model: 'qwen-plus',
+          model,
           stream: true,
           messages: [
             {
