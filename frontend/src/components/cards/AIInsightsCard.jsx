@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bot, RefreshCw } from 'lucide-react'
 import { useGlobalSales, useKPIs, useTopProducts } from '../../api/hooks'
 import api from '../../api/axios'
+import { useTheme } from '../../context/ThemeContext'
 
 function formatTime(date) {
   return date.toLocaleTimeString([], {
@@ -34,6 +35,7 @@ function parseInsightLines(text) {
 }
 
 export default function AIInsightsCard() {
+  const { darkMode } = useTheme()
   const { data: kpis } = useKPIs()
   const { data: topProducts } = useTopProducts(10)
   const { data: globalSales } = useGlobalSales()
@@ -88,6 +90,14 @@ export default function AIInsightsCard() {
 
     const controller = new AbortController()
     controllerRef.current = controller
+    const styleHints = [
+      'focus on outliers first',
+      'focus on trend direction first',
+      'focus on data consistency checks first',
+      'focus on market-level comparison first',
+    ]
+    const styleHint = styleHints[Math.floor(Math.random() * styleHints.length)]
+    const analysisRunId = Date.now()
 
     try {
       const isNvidiaKey = apiKey.startsWith('nvapi-')
@@ -96,6 +106,8 @@ export default function AIInsightsCard() {
         const { data } = await api.post('/dashboard/ai-insights/', {
           apiKey,
           kpiData,
+          styleHint,
+          analysisRunId,
         })
         const content = data?.content || ''
         setHasFirstToken(true)
@@ -119,14 +131,17 @@ export default function AIInsightsCard() {
         body: JSON.stringify({
           model,
           stream: true,
+          temperature: 0.85,
+          top_p: 0.92,
+          presence_penalty: 0.3,
           messages: [
             {
               role: 'system',
-              content: 'You are a concise sales analyst. Respond only in bullet points. Never exceed 120 words.',
+              content: 'You are a concise sales analyst. Respond only in bullet points. Never exceed 120 words. Avoid repeating the same wording between runs.',
             },
             {
               role: 'user',
-              content: `Analyze this sales data and give exactly 3 bullet-point insights about trends/anomalies, then 1 actionable recommendation:\n\n${JSON.stringify(kpiData, null, 2)}`,
+              content: `Analyze this sales data and give exactly 3 bullet-point insights about trends/anomalies, then 1 actionable recommendation. Use this writing style: ${styleHint}. Analysis run id: ${analysisRunId}.\n\n${JSON.stringify(kpiData, null, 2)}`,
             },
           ],
         }),
@@ -187,16 +202,18 @@ export default function AIInsightsCard() {
       className="card"
       style={{
         border: '2px solid transparent',
-        background: 'linear-gradient(white, white) padding-box, linear-gradient(135deg, #60a5fa, #4361ee) border-box',
+        background: darkMode
+          ? 'linear-gradient(#1f2937, #1f2937) padding-box, linear-gradient(135deg, #60a5fa, #4361ee) border-box'
+          : 'linear-gradient(white, white) padding-box, linear-gradient(135deg, #60a5fa, #4361ee) border-box',
       }}
     >
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
           <Bot className="w-5 h-5 text-primary-600" />
           AI Insights
         </h3>
         {lastUpdated && !isStreaming && (
-          <p className="text-xs text-gray-500">Last updated: {formatTime(lastUpdated)}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Last updated: {formatTime(lastUpdated)}</p>
         )}
       </div>
 
@@ -216,13 +233,13 @@ export default function AIInsightsCard() {
 
       {(insights || (isStreaming && hasFirstToken)) && (
         <div className="mb-4">
-          <ul className="list-disc pl-5 space-y-2 text-sm text-gray-700">
+          <ul className="list-disc pl-5 space-y-2 text-sm text-gray-700 dark:text-gray-200">
             {lines.map((line, idx) => (
               <li key={`${line}-${idx}`}>{line}</li>
             ))}
             {isStreaming && (
               <li className="list-none ml-[-1.1rem]">
-                <span className="inline-block w-2 h-4 align-middle bg-gray-800 animate-blink" />
+                <span className="inline-block w-2 h-4 align-middle bg-gray-800 dark:bg-gray-100 animate-blink" />
               </li>
             )}
           </ul>

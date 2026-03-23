@@ -64,6 +64,8 @@ class AIInsightsProxyView(APIView):
     def post(self, request):
         api_key = request.data.get('apiKey') or os.environ.get('VITE_QWEN_API_KEY')
         kpi_data = request.data.get('kpiData', {})
+        style_hint = request.data.get('styleHint', 'focus on trend direction first')
+        analysis_run_id = request.data.get('analysisRunId', str(int(timezone.now().timestamp())))
 
         if not api_key:
             return Response({'detail': 'Missing API key'}, status=status.HTTP_400_BAD_REQUEST)
@@ -79,16 +81,20 @@ class AIInsightsProxyView(APIView):
         payload = {
             'model': model,
             'stream': False,
+            'temperature': 0.85,
+            'top_p': 0.92,
+            'presence_penalty': 0.3,
             'messages': [
                 {
                     'role': 'system',
-                    'content': 'You are a concise sales analyst. Respond only in bullet points. Never exceed 120 words.',
+                    'content': 'You are a concise sales analyst. Respond only in bullet points. Never exceed 120 words. Avoid repeating the same wording between runs.',
                 },
                 {
                     'role': 'user',
                     'content': (
                         'Analyze this sales data and give exactly 3 bullet-point insights '
-                        'about trends/anomalies, then 1 actionable recommendation:\n\n'
+                        f'about trends/anomalies, then 1 actionable recommendation. Use this writing style: {style_hint}. '
+                        f'Analysis run id: {analysis_run_id}.\n\n'
                         + json.dumps(kpi_data, indent=2)
                     ),
                 },
