@@ -1,11 +1,6 @@
 {
   "version": 2,
   "buildCommand": "bash build.sh",
-  "functions": {
-    "app.py": {
-      "runtime": "@vercel/python@latest"
-    }
-  },
   "routes": [
     {
       "src": "/(.*)",
