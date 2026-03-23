@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 from datetime import timedelta
 
+import dj_database_url
+
 try:
     from decouple import config
 except ImportError:
@@ -17,11 +19,15 @@ except ImportError:
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+
+def split_csv(value):
+    return [item.strip() for item in value.split(',') if item.strip()]
+
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
 
 DEBUG = config('DEBUG', default=True, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = split_csv(config('ALLOWED_HOSTS', default='localhost,127.0.0.1'))
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -33,6 +39,7 @@ INSTALLED_APPS = [
     # Third party
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
     # Local apps
@@ -72,19 +79,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database - Use SQLite for development simplicity
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
+database_url = config('DATABASE_URL', default='') or config('POSTGRES_URL', default='')
 
-# For PostgreSQL in production, uncomment below:
-# import dj_database_url
-# DATABASES = {
-#     'default': dj_database_url.config(default=config('DATABASE_URL'))
-# }
+if database_url:
+    DATABASES = {
+        'default': dj_database_url.parse(database_url, conn_max_age=600, ssl_require=True)
+    }
+else:
+    # SQLite for local development only.
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -134,6 +142,9 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = config(
     'CORS_ALLOWED_ORIGINS',
     default='http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174'
-).split(',')
+)
+
+CORS_ALLOWED_ORIGINS = split_csv(CORS_ALLOWED_ORIGINS)
+CORS_ALLOWED_ORIGIN_REGEXES = split_csv(config('CORS_ALLOWED_ORIGIN_REGEXES', default=''))
 
 CORS_ALLOW_CREDENTIALS = True

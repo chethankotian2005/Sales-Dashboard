@@ -42,7 +42,7 @@ export function AuthProvider({ children }) {
       navigate('/')
       return { success: true }
     } catch (error) {
-      const message = error.response?.data?.detail || 'Invalid credentials'
+      const message = error.response?.data?.detail || 'Unable to reach server. Please try again.'
       toast.error(message)
       return { success: false, error: message }
     }

@@ -11,6 +11,7 @@ SECRET_KEY=your-production-secret-key
 DATABASE_URL=sqlite:///db.sqlite3
 ALLOWED_HOSTS=localhost,127.0.0.1,.vercel.app
 CORS_ALLOWED_ORIGINS=http://localhost:5173,https://your-frontend-domain.vercel.app
+CORS_ALLOWED_ORIGIN_REGEXES=^https://.*\.vercel\.app$
 ```
 
 ### Frontend (.env)
@@ -19,6 +20,8 @@ Create a `.env` file in the `frontend/` directory:
 ```
 VITE_API_URL=https://your-backend-domain.vercel.app/api
 ```
+
+For single-project Vercel deployments using the root `vercel.json` routes (`/api/*` -> Django), you can omit `VITE_API_URL` so frontend calls relative `/api` automatically.
 
 ## Vercel Deployment
 
@@ -33,8 +36,9 @@ VITE_API_URL=https://your-backend-domain.vercel.app/api
 1. Create a new Vercel project for the backend
 2. Set the root directory to `backend`
 3. Framework preset: Python
-4. Set environment variables in Vercel dashboard
-5. Deploy
+4. Set Build Command to: `bash build.sh`
+5. Set environment variables in Vercel dashboard
+6. Deploy
 
 ### Monorepo Deployment (Alternative)
 You can also deploy both frontend and backend from the root using the provided `vercel.json` configuration.
@@ -51,6 +55,9 @@ Make sure to set these environment variables in your Vercel dashboard:
 - `SECRET_KEY`: Your secure Django secret key
 - `ALLOWED_HOSTS`: Include your Vercel domain
 - `CORS_ALLOWED_ORIGINS`: Include your frontend domain
+- `DATABASE_URL`: Production PostgreSQL connection string (recommended: Vercel Postgres or Neon)
+
+Important: Avoid SQLite in production on Vercel because serverless functions do not provide a reliable writable persistent filesystem. Use PostgreSQL via `DATABASE_URL`.
 
 ## Database
 
