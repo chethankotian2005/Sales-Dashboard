@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Bot, RefreshCw, Sparkles } from 'lucide-react'
+import { Bot, RefreshCw } from 'lucide-react'
 import { useGlobalSales, useKPIs, useTopProducts } from '../../api/hooks'
 import api from '../../api/axios'
 
@@ -12,20 +12,25 @@ function formatTime(date) {
 }
 
 function parseInsightLines(text) {
+  const sanitize = (line) => line
+    .replace(/\*+/g, '')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+    .trim()
+
   const lines = text
     .split(/\r?\n/)
-    .map((line) => line.trim())
+    .map((line) => sanitize(line))
     .filter(Boolean)
 
   const bulletLines = lines
     .filter((line) => line.startsWith('•') || line.startsWith('-'))
-    .map((line) => line.replace(/^[-•]\s*/, '').trim())
+    .map((line) => sanitize(line.replace(/^[-•]\s*/, '')))
 
   if (bulletLines.length > 0) {
     return bulletLines
   }
 
-  return lines.map((line) => line.replace(/^[-•]\s*/, '').trim())
+  return lines.map((line) => sanitize(line.replace(/^[-•]\s*/, '')))
 }
 
 export default function AIInsightsCard() {
@@ -182,13 +187,13 @@ export default function AIInsightsCard() {
       className="card"
       style={{
         border: '2px solid transparent',
-        background: 'linear-gradient(white, white) padding-box, linear-gradient(135deg, #7c3aed, #4361ee) border-box',
+        background: 'linear-gradient(white, white) padding-box, linear-gradient(135deg, #60a5fa, #4361ee) border-box',
       }}
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-          <Sparkles className="w-5 h-5 text-violet-600" />
-          AI Insights ✨
+          <Bot className="w-5 h-5 text-primary-600" />
+          AI Insights
         </h3>
         {lastUpdated && !isStreaming && (
           <p className="text-xs text-gray-500">Last updated: {formatTime(lastUpdated)}</p>
@@ -227,7 +232,7 @@ export default function AIInsightsCard() {
       {!insights && !isStreaming && (
         <button
           onClick={generateInsights}
-          className="btn bg-violet-600 text-white hover:bg-violet-700 focus:ring-violet-500 inline-flex items-center gap-2"
+          className="btn bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500 inline-flex items-center gap-2"
         >
           <Bot className="w-4 h-4" />
           Generate Insights
@@ -237,10 +242,10 @@ export default function AIInsightsCard() {
       {insights && !isStreaming && (
         <button
           onClick={generateInsights}
-          className="btn bg-violet-600 text-white hover:bg-violet-700 focus:ring-violet-500 inline-flex items-center gap-2"
+          className="btn bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500 inline-flex items-center gap-2"
         >
           <RefreshCw className="w-4 h-4" />
-          Regenerate 🔄
+          Regenerate
         </button>
       )}
     </div>
