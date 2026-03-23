@@ -3,7 +3,7 @@
   "buildCommand": "bash build.sh",
   "functions": {
     "app.py": {
-      "runtime": "python3.12"
+      "runtime": "@vercel/python@latest"
     }
   },
   "routes": [
