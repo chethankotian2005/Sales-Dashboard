@@ -14,6 +14,7 @@ import TopProductsTable from '../components/tables/TopProductsTable'
 import TransactionsList from '../components/tables/TransactionsList'
 import PopularProductsCards from '../components/cards/PopularProductsCards'
 import NewsFeed from '../components/cards/NewsFeed'
+import AIInsightsCard from '../components/cards/AIInsightsCard'
 import { CardSkeleton } from '../components/ui/Skeleton'
 import DashboardGrid from '../components/dashboard/DashboardGrid'
 import { useDashboardLayout } from '../hooks/useDashboardLayout'
@@ -93,6 +94,9 @@ export default function Dashboard() {
           )}
         </div>
       ),
+    },
+    'ai-insights': {
+      component: <AIInsightsCard />,
     },
     'revenue-chart': {
       component: <RevenueChart />,

@@ -5,6 +5,7 @@ const STORAGE_KEY = 'dashboard_widget_order'
 // Default widget order - only includes actually rendered widgets
 const DEFAULT_ORDER = [
   'kpi-cards',
+  'ai-insights',
   'revenue-chart',
   'daily-sales-category',
   'transactions-global',
