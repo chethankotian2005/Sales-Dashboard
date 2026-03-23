@@ -3,9 +3,13 @@ API Views for the Sales Dashboard.
 """
 
 import csv
+import json
+import os
 from datetime import datetime, timedelta
 from decimal import Decimal
 import random
+import urllib.error
+import urllib.request
 
 from django.http import HttpResponse
 from django.db.models import Sum, Count, Avg
@@ -48,6 +52,87 @@ class SmallPagination(PageNumberPagination):
     page_size = 5
     page_size_query_param = 'page_size'
     max_page_size = 50
+
+
+class AIInsightsProxyView(APIView):
+    """
+    Proxy AI insights generation through backend to avoid browser CORS issues.
+    POST /api/dashboard/ai-insights/
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        api_key = request.data.get('apiKey') or os.environ.get('VITE_QWEN_API_KEY')
+        kpi_data = request.data.get('kpiData', {})
+
+        if not api_key:
+            return Response({'detail': 'Missing API key'}, status=status.HTTP_400_BAD_REQUEST)
+
+        is_nvidia_key = str(api_key).startswith('nvapi-')
+        endpoint = (
+            'https://integrate.api.nvidia.com/v1/chat/completions'
+            if is_nvidia_key
+            else 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
+        )
+        model = 'qwen/qwen3.5-122b-a10b' if is_nvidia_key else 'qwen-plus'
+
+        payload = {
+            'model': model,
+            'stream': False,
+            'messages': [
+                {
+                    'role': 'system',
+                    'content': 'You are a concise sales analyst. Respond only in bullet points. Never exceed 120 words.',
+                },
+                {
+                    'role': 'user',
+                    'content': (
+                        'Analyze this sales data and give exactly 3 bullet-point insights '
+                        'about trends/anomalies, then 1 actionable recommendation:\n\n'
+                        + json.dumps(kpi_data, indent=2)
+                    ),
+                },
+            ],
+        }
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}',
+            'Accept': 'application/json',
+        }
+
+        try:
+            req = urllib.request.Request(
+                endpoint,
+                data=json.dumps(payload).encode('utf-8'),
+                headers=headers,
+                method='POST',
+            )
+            with urllib.request.urlopen(req, timeout=45) as resp:
+                raw = resp.read().decode('utf-8')
+                parsed = json.loads(raw)
+
+            content = (
+                parsed.get('choices', [{}])[0]
+                .get('message', {})
+                .get('content', '')
+            )
+            return Response({'content': content}, status=status.HTTP_200_OK)
+        except urllib.error.HTTPError as exc:
+            error_body = exc.read().decode('utf-8', errors='ignore')
+            return Response(
+                {
+                    'detail': 'AI provider request failed',
+                    'provider_status': exc.code,
+                    'provider_body': error_body,
+                },
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        except Exception as exc:
+            return Response(
+                {'detail': f'Unexpected proxy error: {str(exc)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 
 class KPIView(APIView):

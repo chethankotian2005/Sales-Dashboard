@@ -9,7 +9,8 @@ from .views import (
     TransactionViewSet, InvoiceViewSet, ProductViewSet,
     GlobalSalesView, MarketValueView, NewsViewSet,
     NotificationViewSet, AccountInfoView, CategoryViewSet,
-    CustomerViewSet, OrderViewSet, AnalyticsView, UserProfileView
+    CustomerViewSet, OrderViewSet, AnalyticsView, UserProfileView,
+    AIInsightsProxyView
 )
 
 router = DefaultRouter()
@@ -33,4 +34,5 @@ urlpatterns = [
     path('account/', AccountInfoView.as_view(), name='account'),
     path('analytics/', AnalyticsView.as_view(), name='analytics'),
     path('profile/', UserProfileView.as_view(), name='profile'),
+    path('ai-insights/', AIInsightsProxyView.as_view(), name='ai-insights'),
 ]

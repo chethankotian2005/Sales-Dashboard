@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Bot, RefreshCw, Sparkles } from 'lucide-react'
 import { useGlobalSales, useKPIs, useTopProducts } from '../../api/hooks'
+import api from '../../api/axios'
 
 function formatTime(date) {
   return date.toLocaleTimeString([], {
@@ -85,6 +86,19 @@ export default function AIInsightsCard() {
 
     try {
       const isNvidiaKey = apiKey.startsWith('nvapi-')
+
+      if (isNvidiaKey) {
+        const { data } = await api.post('/dashboard/ai-insights/', {
+          apiKey,
+          kpiData,
+        })
+        const content = data?.content || ''
+        setHasFirstToken(true)
+        setInsights(content)
+        setLastUpdated(new Date())
+        return
+      }
+
       const endpoint = isNvidiaKey
         ? 'https://integrate.api.nvidia.com/v1/chat/completions'
         : 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions'
