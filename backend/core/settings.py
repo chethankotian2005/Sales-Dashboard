@@ -82,8 +82,9 @@ WSGI_APPLICATION = 'core.wsgi.application'
 database_url = config('DATABASE_URL', default='') or config('POSTGRES_URL', default='')
 
 if database_url:
+    is_postgres = database_url.startswith(('postgres://', 'postgresql://'))
     DATABASES = {
-        'default': dj_database_url.parse(database_url, conn_max_age=600, ssl_require=True)
+        'default': dj_database_url.parse(database_url, conn_max_age=600, ssl_require=is_postgres)
     }
 else:
     # SQLite for local development only.

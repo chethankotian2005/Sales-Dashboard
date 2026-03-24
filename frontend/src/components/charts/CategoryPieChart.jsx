@@ -1,58 +1,49 @@
-import { useState } from 'react'
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-  Sector,
-} from 'recharts'
+import { useMemo, useState } from 'react'
+import { Pie, PieChart, ResponsiveContainer, Tooltip, Sector, Cell } from 'recharts'
 import { useCategorySales } from '../../api/hooks'
 import { formatCurrency } from '../../utils/format'
 import { ChartSkeleton } from '../ui/Skeleton'
 
-// Custom active shape for interactive pie
+const PALETTE = ['#7c3aed', '#06b6d4', '#f59e0b', '#10b981', '#f43f5e', '#8b5cf6']
+
 const renderActiveShape = (props) => {
   const {
-    cx, cy, innerRadius, outerRadius, startAngle, endAngle,
-    fill, payload, percent, value
+    cx,
+    cy,
+    innerRadius,
+    outerRadius,
+    startAngle,
+    endAngle,
+    fill,
+    midAngle,
   } = props
+
+  const RADIAN = Math.PI / 180
+  const offset = 10
+  const dx = Math.cos(-midAngle * RADIAN) * offset
+  const dy = Math.sin(-midAngle * RADIAN) * offset
 
   return (
     <g>
-      {/* Centered text */}
-      <text x={cx} y={cy - 12} textAnchor="middle" fill="#374151" className="dark:fill-white" style={{ fontSize: '14px', fontWeight: 600 }}>
-        {payload.name}
-      </text>
-      <text x={cx} y={cy + 8} textAnchor="middle" fill="#6b7280" style={{ fontSize: '13px' }}>
-        {formatCurrency(value, true)}
-      </text>
-      <text x={cx} y={cy + 26} textAnchor="middle" fill="#9ca3af" style={{ fontSize: '12px' }}>
-        {(percent * 100).toFixed(1)}%
-      </text>
-
-      {/* Active sector - slightly larger */}
       <Sector
-        cx={cx}
-        cy={cy}
+        cx={cx + dx}
+        cy={cy + dy}
         innerRadius={innerRadius}
-        outerRadius={outerRadius + 12}
+        outerRadius={outerRadius + 5}
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
-        style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))', cursor: 'pointer' }}
+        style={{ filter: `drop-shadow(0 8px 16px ${fill}44)` }}
       />
-
-      {/* Inner ring highlight */}
       <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius - 6}
-        outerRadius={innerRadius - 2}
+        cx={cx + dx}
+        cy={cy + dy}
+        innerRadius={outerRadius + 6}
+        outerRadius={outerRadius + 9}
         startAngle={startAngle}
         endAngle={endAngle}
         fill={fill}
-        opacity={0.6}
+        opacity={0.4}
       />
     </g>
   )
@@ -61,118 +52,82 @@ const renderActiveShape = (props) => {
 export default function CategoryPieChart() {
   const { data, isLoading, error } = useCategorySales()
   const [activeIndex, setActiveIndex] = useState(0)
-  const [selectedCategory, setSelectedCategory] = useState(null)
 
   if (isLoading) return <ChartSkeleton />
   if (error) return <div className="card text-red-500">Error loading category data</div>
 
-  const categories = data?.categories || []
-  const total = data?.total || 0
+  const categories = useMemo(() => {
+    return (data?.categories || []).map((item, index) => ({
+      ...item,
+      color: PALETTE[index % PALETTE.length],
+    }))
+  }, [data])
 
-  const onPieEnter = (_, index) => {
-    setActiveIndex(index)
-  }
-
-  const onPieClick = (data, index) => {
-    setSelectedCategory(selectedCategory === index ? null : index)
-  }
+  const activeCategory = categories[activeIndex]
 
   return (
-    <div className="card h-full flex flex-col">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Sales by Category
-        </h3>
-        {selectedCategory !== null && (
-          <button
-            onClick={() => setSelectedCategory(null)}
-            className="text-sm text-primary-500 hover:text-primary-600 font-medium transition-colors"
-          >
-            Show All
-          </button>
-        )}
-      </div>
+    <div className="card chart-card-glass h-full flex flex-col animate-chart-reveal">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Category Breakdown</h3>
 
-      <div className="flex flex-col items-center">
-        <div className="relative cursor-pointer">
-          <ResponsiveContainer width={260} height={260}>
+      <div className="relative flex flex-col items-center">
+        <div className="animate-spin-in">
+          <ResponsiveContainer width={280} height={280}>
             <PieChart>
               <Pie
-                activeIndex={activeIndex}
-                activeShape={renderActiveShape}
                 data={categories}
+                dataKey="value"
                 cx="50%"
                 cy="50%"
-                innerRadius={55}
-                outerRadius={85}
-                paddingAngle={4}
-                dataKey="value"
-                onMouseEnter={onPieEnter}
-                onClick={onPieClick}
-                animationBegin={0}
-                animationDuration={800}
+                innerRadius={65}
+                outerRadius={95}
+                paddingAngle={3}
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                onMouseEnter={(_, index) => setActiveIndex(index)}
+                animationDuration={900}
                 animationEasing="ease-out"
               >
-                {categories.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={entry.color}
-                    style={{
-                      cursor: 'pointer',
-                      opacity: selectedCategory !== null && selectedCategory !== index ? 0.3 : 1,
-                      transition: 'opacity 0.3s ease',
-                    }}
-                  />
+                {categories.map((entry) => (
+                  <Cell key={entry.name} fill={entry.color} />
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value) => [formatCurrency(value), 'Revenue']}
                 contentStyle={{
-                  backgroundColor: 'var(--tooltip-bg, #fff)',
-                  border: '1px solid var(--tooltip-border, #e5e7eb)',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                  border: '1px solid rgba(148,163,184,0.28)',
+                  borderRadius: '12px',
+                  boxShadow: '0 16px 36px rgba(2,6,23,0.35)',
+                  color: '#e2e8f0',
                 }}
+                labelStyle={{ color: '#cbd5e1', fontWeight: 600 }}
+                formatter={(value) => [formatCurrency(value), 'Revenue']}
               />
             </PieChart>
           </ResponsiveContainer>
         </div>
 
-        {/* Interactive Legend */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2 mt-4 w-full">
-          {categories.map((category, index) => (
-            <button
-              key={index}
-              onClick={() => onPieClick(category, index)}
-              onMouseEnter={() => setActiveIndex(index)}
-              className={`flex items-center gap-2 p-2 rounded-lg transition-all text-left ${
-                selectedCategory === index
-                  ? 'bg-gray-100 dark:bg-gray-700 ring-2 ring-primary-500'
-                  : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-              } ${selectedCategory !== null && selectedCategory !== index ? 'opacity-40' : ''}`}
-            >
-              <div
-                className="w-3 h-3 rounded-full flex-shrink-0 transition-transform hover:scale-125"
-                style={{ backgroundColor: category.color }}
-              />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                  {category.name}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  {formatCurrency(category.value, true)} · {category.percentage.toFixed(1)}%
-                </p>
-              </div>
-            </button>
-          ))}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="text-center transition-all duration-300">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+              {activeCategory?.name || 'Category'}
+            </p>
+            <p className="text-base font-bold text-indigo-600 dark:text-indigo-300 mt-1">
+              {formatCurrency(activeCategory?.value || 0, true)}
+            </p>
+          </div>
         </div>
 
-        {/* Total footer */}
-        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 w-full text-center">
-          <p className="text-sm text-gray-500 dark:text-gray-400">Total Revenue</p>
-          <p className="text-xl font-bold text-gray-900 dark:text-white">
-            {formatCurrency(total)}
-          </p>
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {categories.map((category, index) => (
+            <button
+              key={category.name}
+              onMouseEnter={() => setActiveIndex(index)}
+              className="px-3 py-1.5 rounded-full bg-white/80 dark:bg-slate-700/70 border border-slate-200/80 dark:border-slate-600/80 text-xs font-medium text-slate-700 dark:text-slate-200 transition-transform hover:scale-105"
+            >
+              <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: category.color }} />
+              {category.name}
+            </button>
+          ))}
         </div>
       </div>
     </div>
