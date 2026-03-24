@@ -2,14 +2,27 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const ThemeContext = createContext()
 
-export function ThemeProvider({ children }) {
-  const [darkMode, setDarkMode] = useState(() => {
+function readStoredDarkMode() {
+  try {
     const saved = localStorage.getItem('darkMode')
-    return saved ? JSON.parse(saved) : false
-  })
+    if (saved === null) return false
+    const parsed = JSON.parse(saved)
+    return typeof parsed === 'boolean' ? parsed : false
+  } catch {
+    return false
+  }
+}
+
+export function ThemeProvider({ children }) {
+  const [darkMode, setDarkMode] = useState(readStoredDarkMode)
 
   useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(darkMode))
+    try {
+      localStorage.setItem('darkMode', JSON.stringify(darkMode))
+    } catch {
+      // Ignore storage write issues (e.g. privacy mode restrictions).
+    }
+
     if (darkMode) {
       document.documentElement.classList.add('dark')
       document.documentElement.style.setProperty('--toast-bg', '#1f2937')
