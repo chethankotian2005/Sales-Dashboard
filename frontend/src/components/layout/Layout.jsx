@@ -3,11 +3,19 @@ import { clsx } from 'clsx'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 
-export default function Layout({ children }) {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+function readSidebarCollapsed() {
+  try {
     const saved = localStorage.getItem('sidebarCollapsed')
-    return saved ? JSON.parse(saved) : false
-  })
+    if (saved === null) return false
+    const parsed = JSON.parse(saved)
+    return typeof parsed === 'boolean' ? parsed : false
+  } catch {
+    return false
+  }
+}
+
+export default function Layout({ children }) {
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed)
   const [isMobile, setIsMobile] = useState(false)
   const [dateRange, setDateRange] = useState(null)
 
@@ -26,7 +34,11 @@ export default function Layout({ children }) {
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed))
+    try {
+      localStorage.setItem('sidebarCollapsed', JSON.stringify(sidebarCollapsed))
+    } catch {
+      // Ignore storage write failures.
+    }
   }, [sidebarCollapsed])
 
   const handleToggleSidebar = () => {
